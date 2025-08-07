@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lottie Assets Viewer (Final Version)</title>
+    
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script type="importmap">
+    {
+        "imports": {
+            "react": "https://esm.sh/react@18.2.0",
+            "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+            "lottie-react": "https://esm.sh/lottie-react@2.4.0"
+        }
+    }
+    </script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; padding: 2rem; background-color: #f0f2f5; margin: 0; }
+        .container { max-width: 800px; margin: 0 auto; background: #fff; padding: 2rem; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); }
+        .lottie-display { display: flex; align-items: center; justify-content: center; min-height: 320px; }
+        .loading-text, .error-text { color: #666; font-size: 1.2rem; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel" data-type="module">
+        import React, { useState, useEffect } from 'react';
+        import ReactDOM from 'react-dom/client';
+        import Lottie from 'lottie-react';
+        
+        // 올바른 API 주소입니다.
+        const JSDELIVR_API_URL = 'https://data.jsdelivr.com/v1/package/npm/platform-lottie-assets@latest/flat';
+
+        function App() {
+            const [animationNames, setAnimationNames] = useState([]);
+            const [selectedName, setSelectedName] = useState('');
+            const [animationData, setAnimationData] = useState(null);
+            const [status, setStatus] = useState('loadingList'); // 'loadingList', 'loadingAnimation', 'ready', 'error'
+
+            useEffect(() => {
+                fetch(JSDELIVR_API_URL)
+                    .then(response => {
+                        if (!response.ok) throw new Error(`API Error: ${response.status}`);
+                        return response.json();
+                    })
+                    .then(data => {
+                        // data.files가 없을 경우를 대비한 방어 코드
+                        if (!data || !data.files) throw new Error("Invalid API response");
+                        
+                        const lottieFiles = data.files
+                            .filter(file => file.name.startsWith('/lotties/') && file.name.endsWith('.json'))
+                            .map(file => file.name.replace('/lotties/', '').replace('.json', '')); 
+                        
+                        if (lottieFiles.length > 0) {
+                            setAnimationNames(lottieFiles);
+                            setSelectedName(lottieFiles[0]);
+                        } else {
+                            setStatus('error');
+                        }
+                    })
+                    .catch(err => {
+                        console.error("Failed to fetch animation list:", err);
+                        setStatus('error');
+                    });
+            }, []);
+
+            useEffect(() => {
+                if (!selectedName) return;
+
+                setStatus('loadingAnimation');
+                const fileUrl = `https://cdn.jsdelivr.net/npm/platform-lottie-assets/lotties/${selectedName}.json`;
+                
+                fetch(fileUrl)
+                    .then(response => response.json())
+                    .then(data => {
+                        setAnimationData(data);
+                        setStatus('ready');
+                    })
+                    .catch(err => {
+                        console.error("Failed to load animation:", err);
+                        setStatus('error');
+                    });
+            }, [selectedName]);
+
+            const renderContent = () => {
+                if (status === 'loadingList') {
+                    return <p className="loading-text">애니메이션 목록을 불러오는 중...</p>;
+                }
+                if (status === 'loadingAnimation') {
+                    return <p className="loading-text">애니메이션을 로딩하는 중...</p>;
+                }
+                if (status === 'error') {
+                    return <p className="error-text">오류가 발생했습니다. 콘솔을 확인해주세요.</p>;
+                }
+                if (status === 'ready') {
+                    return <Lottie animationData={animationData} loop={true} style={{ width: 300, height: 300 }} />;
+                }
+                return null;
+            };
+
+            return (
+                <div className="container">
+                    <h1>Lottie Assets Viewer</h1>
+                    {animationNames.length > 0 && (
+                        <select value={selectedName} onChange={(e) => setSelectedName(e.target.value)}>
+                            {animationNames.map(name => (
+                                <option key={name} value={name}>{name}</option>
+                            ))}
+                        </select>
+                    )}
+                    <div className="lottie-display">
+                        {renderContent()}
+                    </div>
+                </div>
+            );
+        }
+
+        // React가 로드되었는지 최종 확인 후 렌더링
+        if (React && ReactDOM) {
+            const root = ReactDOM.createRoot(document.getElementById('root'));
+            root.render(<App />);
+        } else {
+            document.getElementById('root').innerHTML = '<p class="error-text">React 라이브러리를 불러오지 못했습니다. importmap 설정을 확인하세요.</p>';
+        }
+    </script>
+</body>
+</html>
