@@ -1,0 +1,16 @@
+[
+  "fota-arrow-dark.json",
+  "fota-arrow-light.json",
+  "graphic-dark-login.json",
+  "graphic-light-login.json",
+  "info-blackvue-light-android-wifi-connect-manually.json",
+  "info-blackvue-light-android-wifi-disconnect-manually.json",
+  "info-blackvue-light-ios-wifi-connect-manually.json",
+  "info-blackvue-light-ios-wifi-disconnect-manually.json",
+  "logo-blackvue-dark-splash.json",
+  "logo-blackvue-light-splash.json",
+  "spinner-blackvue-dark-loading.json",
+  "spinner-blackvue-light-loading.json",
+  "touch-sensor-blackvue-dark.json",
+  "touch-sensor-blackvue-light.json"
+]

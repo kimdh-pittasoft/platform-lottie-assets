@@ -1,129 +1,116 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lottie Assets Viewer (Final Version)</title>
-    
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script type="importmap">
-    {
-        "imports": {
-            "react": "https://esm.sh/react@18.2.0",
-            "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
-            "lottie-react": "https://esm.sh/lottie-react@2.4.0"
-        }
+  <meta charset="UTF-8">
+  <title>Platform Lottie Assets Demo</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .shad-card { 
+      background: white;
+      border-radius: 1rem;
+      box-shadow: 0 2px 8px 0 rgba(0,0,0,0.08);
+      border: 1px solid #e4e4e7;
+      padding: 1.5rem;
+      transition: box-shadow 0.2s;
     }
-    </script>
-    <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; padding: 2rem; background-color: #f0f2f5; margin: 0; }
-        .container { max-width: 800px; margin: 0 auto; background: #fff; padding: 2rem; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); }
-        .lottie-display { display: flex; align-items: center; justify-content: center; min-height: 320px; }
-        .loading-text, .error-text { color: #666; font-size: 1.2rem; }
-    </style>
+    .shad-btn {
+      padding: 0.25rem 0.75rem;
+      border-radius: 0.75rem;
+      border: 1px solid #e4e4e7;
+      background: #f4f4f5;
+      color: #18181b;
+      transition: background 0.15s;
+      margin-top: 0.25rem;
+      font-size: 0.875rem;
+    }
+    .shad-btn:hover {
+      background: #e4e4e7;
+    }
+    .shad-input {
+      width: 100%;
+      padding: 0.5rem 0.75rem;
+      border-radius: 0.5rem;
+      border: 1px solid #d4d4d8;
+      background: #f4f4f5;
+      color: #18181b;
+      font-size: 1rem;
+    }
+  </style>
+  <!-- lottie-web -->
+  <script src="https://unpkg.com/lottie-web@5.12.0/build/player/lottie.min.js"></script>
 </head>
-<body>
-    <div id="root"></div>
+<body class="bg-zinc-50 text-zinc-900 min-h-screen">
+  <div class="max-w-4xl mx-auto py-8 px-4">
+    <h1 class="text-3xl font-bold mb-4">Platform Lottie Assets Demo <span class="text-base font-normal text-zinc-500">(GitHub Pages)</span></h1>
+    <div class="flex gap-2 items-center mb-8">
+      <input id="search" class="shad-input max-w-xs" placeholder="애니메이션 이름 검색..." />
+      <span id="total-count" class="text-zinc-500 text-sm"></span>
+    </div>
+    <div id="list" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6"></div>
+  </div>
+  <script>
+    let lottieFiles = [];
+    let filtered = [];
 
-    <script type="text/babel" data-type="module">
-        import React, { useState, useEffect } from 'react';
-        import ReactDOM from 'react-dom/client';
-        import Lottie from 'lottie-react';
-        
-        // 올바른 API 주소입니다.
-        const JSDELIVR_API_URL = 'https://data.jsdelivr.com/v1/package/npm/platform-lottie-assets@latest/flat';
+    // animations.json을 fetch해서 실제 파일 리스트 자동 반영
+    fetch('./lotties/animations.json')
+      .then(res => res.json())
+      .then(files => {
+        lottieFiles = files;
+        filtered = files;
+        renderList();
+      });
 
-        function App() {
-            const [animationNames, setAnimationNames] = useState([]);
-            const [selectedName, setSelectedName] = useState('');
-            const [animationData, setAnimationData] = useState(null);
-            const [status, setStatus] = useState('loadingList'); // 'loadingList', 'loadingAnimation', 'ready', 'error'
+    document.getElementById('search').addEventListener('input', e => {
+      const q = e.target.value.trim().toLowerCase();
+      filtered = lottieFiles.filter(fn => fn.toLowerCase().includes(q));
+      renderList();
+    });
 
-            useEffect(() => {
-                fetch(JSDELIVR_API_URL)
-                    .then(response => {
-                        if (!response.ok) throw new Error(`API Error: ${response.status}`);
-                        return response.json();
-                    })
-                    .then(data => {
-                        // data.files가 없을 경우를 대비한 방어 코드
-                        if (!data || !data.files) throw new Error("Invalid API response");
-                        
-                        const lottieFiles = data.files
-                            .filter(file => file.name.startsWith('/lotties/') && file.name.endsWith('.json'))
-                            .map(file => file.name.replace('/lotties/', '').replace('.json', '')); 
-                        
-                        if (lottieFiles.length > 0) {
-                            setAnimationNames(lottieFiles);
-                            setSelectedName(lottieFiles[0]);
-                        } else {
-                            setStatus('error');
-                        }
-                    })
-                    .catch(err => {
-                        console.error("Failed to fetch animation list:", err);
-                        setStatus('error');
-                    });
-            }, []);
+    function renderList() {
+      const $list = document.getElementById('list');
+      $list.innerHTML = '';
+      document.getElementById('total-count').textContent = `총 ${filtered.length}개`;
+      filtered.forEach(filename => {
+        // 카드 생성
+        const card = document.createElement('div');
+        card.className = 'shad-card flex flex-col items-center';
 
-            useEffect(() => {
-                if (!selectedName) return;
+        // Lottie Container
+        const animDiv = document.createElement('div');
+        animDiv.className = 'w-28 h-28 mb-4';
+        card.appendChild(animDiv);
 
-                setStatus('loadingAnimation');
-                const fileUrl = `https://cdn.jsdelivr.net/npm/platform-lottie-assets/lotties/${selectedName}.json`;
-                
-                fetch(fileUrl)
-                    .then(response => response.json())
-                    .then(data => {
-                        setAnimationData(data);
-                        setStatus('ready');
-                    })
-                    .catch(err => {
-                        console.error("Failed to load animation:", err);
-                        setStatus('error');
-                    });
-            }, [selectedName]);
+        // Lottie 애니메이션 로드
+        lottie.loadAnimation({
+          container: animDiv,
+          renderer: 'svg',
+          loop: true,
+          autoplay: true,
+          path: `./lotties/${filename}`
+        });
 
-            const renderContent = () => {
-                if (status === 'loadingList') {
-                    return <p className="loading-text">애니메이션 목록을 불러오는 중...</p>;
-                }
-                if (status === 'loadingAnimation') {
-                    return <p className="loading-text">애니메이션을 로딩하는 중...</p>;
-                }
-                if (status === 'error') {
-                    return <p className="error-text">오류가 발생했습니다. 콘솔을 확인해주세요.</p>;
-                }
-                if (status === 'ready') {
-                    return <Lottie animationData={animationData} loop={true} style={{ width: 300, height: 300 }} />;
-                }
-                return null;
-            };
+        // 파일명 텍스트
+        const name = document.createElement('div');
+        name.className = 'mb-1 text-center text-sm font-mono break-all select-all';
+        name.textContent = filename;
+        card.appendChild(name);
 
-            return (
-                <div className="container">
-                    <h1>Lottie Assets Viewer</h1>
-                    {animationNames.length > 0 && (
-                        <select value={selectedName} onChange={(e) => setSelectedName(e.target.value)}>
-                            {animationNames.map(name => (
-                                <option key={name} value={name}>{name}</option>
-                            ))}
-                        </select>
-                    )}
-                    <div className="lottie-display">
-                        {renderContent()}
-                    </div>
-                </div>
-            );
-        }
+        // 이름 복사 버튼
+        const copyBtn = document.createElement('button');
+        copyBtn.className = 'shad-btn';
+        copyBtn.innerText = '이름 복사';
+        copyBtn.onclick = () => {
+          navigator.clipboard.writeText(filename);
+          copyBtn.innerText = '복사됨!';
+          setTimeout(() => copyBtn.innerText = '이름 복사', 1000);
+        };
+        card.appendChild(copyBtn);
 
-        // React가 로드되었는지 최종 확인 후 렌더링
-        if (React && ReactDOM) {
-            const root = ReactDOM.createRoot(document.getElementById('root'));
-            root.render(<App />);
-        } else {
-            document.getElementById('root').innerHTML = '<p class="error-text">React 라이브러리를 불러오지 못했습니다. importmap 설정을 확인하세요.</p>';
-        }
-    </script>
+        $list.appendChild(card);
+      });
+    }
+  </script>
 </body>
 </html>
